@@ -1,0 +1,10 @@
+PROJECT TITLE
+Batch GPU Image Filtering with CUDA: Gaussian Blur and Sobel Edge Detection
+
+CODE PROJECT DESCRIPTION (paste into Coursera)
+
+For this project I wrote a command-line CUDA program that processes a large batch of grayscale images in a single run. It reads every PGM image in an input directory (I generated 200 synthetic 512x512 images with random shapes and noise, but any PGM dataset works, for example SIPI images converted to PGM), applies filters on the GPU with my own CUDA kernels, and writes the results to an output directory. The filter is chosen with the --filter argument: a 5x5 Gaussian blur, a 3x3 Sobel edge detector, or "edges", which runs the blur first and then Sobel so that noise does not produce false edges. The intermediate image stays in GPU memory between the two kernels, so only one upload and one download are needed per image.
+
+Each kernel uses one thread per pixel with 16x16 thread blocks, and clamp-to-edge handling at the borders. The Gaussian weights are stored in constant memory because every thread reads the same small table. I time each image with CUDA events (including host-to-device and device-to-host copies) and print a per-image log plus a summary of total and average time, which is saved as proof of execution along with before/after PNG images.
+
+The main challenges were getting the border handling right, parsing the PGM header correctly (comments and whitespace), and wrapping every CUDA call in error checking so failures were easy to find. One lesson was that for small images the memory transfers dominate the runtime, so the GPU speedup comes mostly from kernel parallelism on larger images; allocating and freeing buffers per image is also wasteful. Next steps would be reusing buffers, using CUDA streams to overlap copies with computation, using shared memory tiles for the stencil, and comparing against NPP. The results showed blurred images with reduced noise and clear white outlines of the shapes in the edge images, which is what I expected. The repository includes a README, a Makefile, a run.sh script and command-line arguments to control the input, output and filter.
